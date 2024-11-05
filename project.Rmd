@@ -1,0 +1,182 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+# Load a nice library for plotting
+# Install first if you don't have them yet
+# install.packages('ggplot2')
+library(ggplot2)
+```
+
+
+# Introduction
+We will be exploring a data set about cars, including their speed and stopping distances (how far the car will travel after hitting the brake). Below is the first six records in the data set which show the speed (`speed`) in miles per hour (mph) and stopping distance (`dist`) in feet (ft).
+
+```{r}
+dat <- cars
+head(dat)
+```
+
+We can also see its descriptive statistics.
+
+```{r}
+summary(dat)
+```
+
+
+We can also visualize it with a simple plot.
+
+```{r}
+scatter <- ggplot(dat, aes(x=speed, y=dist)) + geom_point()
+scatter
+```
+
+# Chapter 8: Confidence Interval on the Mean
+
+For chapter 8 we mainly studied about how to estimate the Confidence Interval (CI) that the mean of the population really fall into. Most of the time, we only care about the 95% CI.
+
+There are two situations when calculating the CI of the mean of a sample. One situation is that the variance of the population itself is already known, and the other one is when that is not known. However, the two cases are in fact fairly similar. 
+
+In our case, we only have data of the sample, so the variance of the population is unknown. Thus, we will use this formula
+
+$$\overline{x} - t_{\alpha/2, n-1}\frac{s}{\sqrt{n}} \leq \mu \leq \overline{x} + t_{\alpha/2, n-1}\frac{s}{\sqrt{n}}$$ 
+In R, we can get the information for $\overline{x}$ (the mean of the sample) using `mean()`, `s` (the standard deviation of the sample) using `sd()` and `n` (the number of records in the sample) using `length()`. Now in the data set there are two random variable, `speed` and `dist`. For our purpose, let's say we choose to estimate the 95% CI of the mean of `speed`.
+
+```{r}
+sample.mean <- mean(dat$speed)
+sample.sd <- sd(dat$speed)
+sample.n <- length(dat$speed)
+```
+
+```{r echo=FALSE}
+print(c("sample mean",sample.mean))
+print(c("sample standard deviation",sample.sd))
+print(c("sample count",sample.mean))
+```
+
+Then we can calculate the t-score with the `qt()` function in R.
+
+```{r}
+alpha <- 0.05
+degree.freedom <- sample.n - 1
+t.score <- qt(alpha/2, degree.freedom, lower.tail=F)
+t.score
+```
+
+So we can calculate our CI as follow
+
+```{r}
+margin.error <- t.score * (sample.sd/sqrt(sample.n))
+
+lower.bound <- sample.mean - margin.error
+upper.bound <- sample.mean + margin.error
+
+print(c(lower.bound, upper.bound))
+```
+
+```{r}
+model <- lm(speed ~ 1, dat)
+confint(model, level = 0.95)
+```
+
+# Chapter 9: Hypothesis Testing
+
+Let's look at the density plot of `dist` below and make a guess of what is the mean stopping distance is.
+
+```{r}
+ggplot(dat, aes(x=dist)) + geom_density()
+```
+For example, I will guess that it is about 35, so we have.
+
+```{r}
+guessed.mean <- 35
+guessed.mean
+```
+
+For this data set, we don't know the standard deviation of the population, so we will use a T-test to check our hypothesis. R provide a very useful function for us.
+
+```{r}
+# The default of t.test will be two-sided
+# It is used to test the alternative hypothesis that the mean is not 35
+t.test(dat$dist, mu=35)
+```
+
+Here you can see that my guess is wrong, because of the low p-value. The mean of the sample is  very unlikely to be 35.
+
+```{r}
+# It is also possible to do one-sided test
+
+# This is to test the alternative hypothesis that the mean will be greater than 35
+t.test(dat$dist, mu=35, alternative = "greater")
+
+# And this is to test the hypothesis that it is lower
+t.test(dat$dist, mu=35, alternative = "less")
+```
+
+
+# Chapter 10: Difference between Two Samples
+
+For this chapter we will use another data set which contains information about the effect of two drugs in increasing sleep time on 10 patients. The `group` variable indicates the drug, `ID` indicates the patient, and `extra` indicate the increase in sleep time compared to people who don't use any drug.
+
+```{r}
+dat2 <- sleep
+print(dat2)
+summary(dat2)
+```
+
+We can also conduct a one-sample t-test first to confirm that any of the drugs has some effect.
+
+```{r}
+t.test(dat2$extra)
+```
+
+We can see that the p-value is smaller than 0.05, so we can safely reject the null-hypothesis and confirm that the drugs have effects.
+
+But then we also want to know which drug is more effective. Then we can conduct a two-sample t-test. These drugs are tested twice on the same patient, so we have to do a paired t-test.
+
+```{r}
+# We first need to split the data set
+drug1 <- subset(dat2, group==1)
+drug2 <- subset(dat2, group==2)
+```
+
+```{r}
+print(drug1)
+print(drug2)
+```
+
+```{r}
+#Now we do the t-test
+t.test(x = drug1$extra, y = drug2$extra, paired = TRUE, var.equal = TRUE)
+```
+
+We can see that the p-value is very small, so we can conclude that there is indeed some differences. A negative `t` from the test indicate that the mean of the data we put into `x` is less than the mean that we put into `y`. Therefore we can say that Drug 2 is more effective than Drug 1.
+
+# Chapter 11: Linear Regression
+
+Now, turning back to the first data set about the speed of the cars and their stopping distances. It is quite reasonable to assume that the faster a car runs on average, the longer it takes for that car to stop. So, we have a hypothesis that `speed` and `dist` have a positive correlation.
+
+Now let's look at the scatter plot again, we can see that there is an upward trend. But how do we convince others that this is really statistically significance and not just dby dumb luck?
+
+```{r}
+scatter
+```
+
+We do it with a linear regression model.
+
+
+```{r}
+linear <- lm(dat$dist~dat$speed)
+summary(linear)
+confint(linear, level=0.95)
+```
+
+We can see that the p-value is very small (it means something like $1.49\times10^{-12}$). So we have very little reason to reject the alternative hypothesis that there is a correlation. The estimated coefficient between `dist`  and `speed` is positive, so we can conclude that for cars, the faster the speed, the longer the stopping distance.
+
+We can also draw a line on the plot to illustrate the slope of the linear model.
+
+```{r}
+# scatter + geom_smooth(method=lm , color="red", se=TRUE)
+```
+
