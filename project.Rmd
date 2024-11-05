@@ -18,6 +18,13 @@ dat <- cars
 head(dat)
 ```
 
+Or we can browse the full data
+
+```{r}
+print(dat)
+```
+
+
 We can also see its descriptive statistics.
 
 ```{r}
@@ -177,6 +184,6 @@ We can see that the p-value is very small (it means something like $1.49\times10
 We can also draw a line on the plot to illustrate the slope of the linear model.
 
 ```{r}
-# scatter + geom_smooth(method=lm , color="red", se=TRUE)
+scatter + geom_smooth(method=lm , color="red", se=TRUE)
 ```
 
