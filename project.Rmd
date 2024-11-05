@@ -57,9 +57,9 @@ sample.n <- length(dat$speed)
 ```
 
 ```{r echo=FALSE}
-print(c("sample mean",sample.mean))
-print(c("sample standard deviation",sample.sd))
-print(c("sample count",sample.mean))
+sample.mean
+sample.sd
+sample.n
 ```
 
 Then we can calculate the t-score with the `qt()` function in R.
@@ -81,6 +81,7 @@ upper.bound <- sample.mean + margin.error
 
 print(c(lower.bound, upper.bound))
 ```
+Or we can make our life easier and use the built-in linear regression and then query the CI of the model.
 
 ```{r}
 model <- lm(speed ~ 1, dat)
